@@ -38,6 +38,9 @@ using AddressHash = std::unordered_set<h160>;
 /// The zero address.
 extern Address const ZeroAddress;
 
+/// The ripemd address (address 3).
+extern Address const RipmedAddress;
+
 /// The last address.
 extern Address const MaxAddress;
 

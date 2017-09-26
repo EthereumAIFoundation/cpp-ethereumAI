@@ -20,6 +20,7 @@
 namespace dev
 {
 Address const ZeroAddress;
+Address const RipmedAddress{"0x0000000000000000000000000000000000000003"};
 Address const MaxAddress{"0xffffffffffffffffffffffffffffffffffffffff"};
 Address const SystemAddress{"0xfffffffffffffffffffffffffffffffffffffffe"};
 }

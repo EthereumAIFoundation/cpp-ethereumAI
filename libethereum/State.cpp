@@ -537,6 +537,8 @@ void State::rollback(size_t _savepoint)
 			account.setCode(std::move(change.oldCode));
 			break;
 		case Change::Touch:
+			if (change.address == RipmedAddress)
+				break; // geth-style implementation of the address 3 anomaly: https://github.com/ethereum/go-ethereum/blob/3c8656347f67dbc8e57c663ec5c26d24c4151678/core/state/journal.go#L100
 			account.untouch();
 			m_unchangedCacheEntries.emplace_back(change.address);
 			break;
