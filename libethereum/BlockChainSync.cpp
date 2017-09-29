@@ -193,19 +193,24 @@ void BlockChainSync::onBlockImported(BlockHeader const& _info)
 		auto& bodies = *m_bodies.begin();
 		if (headers.first <= m_lastImportedBlock)
 		{
-			size_t const i = m_lastImportedBlock - headers.first;
-			auto newHeaders = std::move(headers.second);
-			newHeaders.erase(newHeaders.begin(), newHeaders.begin() + i);
-			unsigned newHeaderHead = headers.first + i;
-			auto newBodies = std::move(bodies.second);
-			newBodies.erase(newBodies.begin(), newBodies.begin() + i);
-			unsigned newBodiesHead = bodies.first + i;
-			m_headers.erase(m_headers.begin());
-			m_bodies.erase(m_bodies.begin());
-			if (!newHeaders.empty())
-				m_headers[newHeaderHead] = newHeaders;
-			if (!newBodies.empty())
-				m_bodies[newBodiesHead] = newBodies;
+			size_t i = m_lastImportedBlock - headers.first + 1;
+			while (i > 0)
+			{
+				size_t const toErase = min(i, min(headers.second.size(), bodies.second.size()));
+				auto newHeaders = std::move(headers.second);
+				newHeaders.erase(newHeaders.begin(), newHeaders.begin() + toErase);
+				unsigned newHeaderHead = headers.first + toErase;
+				auto newBodies = std::move(bodies.second);
+				newBodies.erase(newBodies.begin(), newBodies.begin() + toErase);
+				unsigned newBodiesHead = bodies.first + toErase;
+				m_headers.erase(m_headers.begin());
+				m_bodies.erase(m_bodies.begin());
+				if (!newHeaders.empty())
+					m_headers[newHeaderHead] = newHeaders;
+				if (!newBodies.empty())
+					m_bodies[newBodiesHead] = newBodies;
+				i -= toErase;
+			}
 		}
 	}
 }
@@ -660,7 +665,6 @@ void BlockChainSync::collectBlocks()
 		return;
 	}
 
-	// OnImportBlock() should do these.
 	auto newHeaders = std::move(headers.second);
 	newHeaders.erase(newHeaders.begin(), newHeaders.begin() + i);
 	unsigned newHeaderHead = headers.first + i;
