@@ -189,6 +189,24 @@ void BlockChainSync::onBlockImported(BlockHeader const& _info)
 		m_lastImportedBlock = static_cast<unsigned>(_info.number());
 		m_lastImportedBlockHash = _info.hash();
 		m_highestBlock = max(m_lastImportedBlock, m_highestBlock);
+		auto& headers = *m_headers.begin();
+		auto& bodies = *m_bodies.begin();
+		if (headers.first <= m_lastImportedBlock)
+		{
+			size_t const i = m_lastImportedBlock - headers.first;
+			auto newHeaders = std::move(headers.second);
+			newHeaders.erase(newHeaders.begin(), newHeaders.begin() + i);
+			unsigned newHeaderHead = headers.first + i;
+			auto newBodies = std::move(bodies.second);
+			newBodies.erase(newBodies.begin(), newBodies.begin() + i);
+			unsigned newBodiesHead = bodies.first + i;
+			m_headers.erase(m_headers.begin());
+			m_bodies.erase(m_bodies.begin());
+			if (!newHeaders.empty())
+				m_headers[newHeaderHead] = newHeaders;
+			if (!newBodies.empty())
+				m_bodies[newBodiesHead] = newBodies;
+		}
 	}
 }
 
@@ -642,6 +660,7 @@ void BlockChainSync::collectBlocks()
 		return;
 	}
 
+	// OnImportBlock() should do these.
 	auto newHeaders = std::move(headers.second);
 	newHeaders.erase(newHeaders.begin(), newHeaders.begin() + i);
 	unsigned newHeaderHead = headers.first + i;
