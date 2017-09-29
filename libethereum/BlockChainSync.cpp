@@ -120,6 +120,21 @@ template<typename T> void removeAllStartingWith(std::map<unsigned, std::vector<T
 	_container.erase(++lower, _container.end());
 }
 
+template<typename T> void removeAllEndingWith(std::map<unsigned, std::vector<T>>& _container, unsigned _number)
+{
+	while (!_container.empty() && _container.begin()->first <= _number)
+	{
+		size_t i = _number - _container.begin()->first + 1;
+		i = min(i, _container.begin()->second.size());
+		auto newBag = std::move(_container.begin()->second);
+		newBag.erase(newBag.begin(), newBag.begin() + i);
+		unsigned newHead = _container.begin()->first + i;
+		_container.erase(_container.begin());
+		if (!newBag.empty())
+			_container[newHead] = newBag;
+	}
+}
+
 template<typename T> void mergeInto(std::map<unsigned, std::vector<T>>& _container, unsigned _number, T&& _data)
 {
 	assert(!haveItem(_container, _number));
@@ -178,6 +193,12 @@ BlockChainSync::~BlockChainSync()
 	abortSync();
 }
 
+void BlockChainSync::removeStaleHeaders()
+{
+	removeAllEndingWith(m_headers, m_lastImportedBlock);
+	removeAllEndingWith(m_bodies, m_lastImportedBlock);
+}
+
 void BlockChainSync::onBlockImported(BlockHeader const& _info)
 {
 	//if a block has been added via mining or other block import function
@@ -189,29 +210,7 @@ void BlockChainSync::onBlockImported(BlockHeader const& _info)
 		m_lastImportedBlock = static_cast<unsigned>(_info.number());
 		m_lastImportedBlockHash = _info.hash();
 		m_highestBlock = max(m_lastImportedBlock, m_highestBlock);
-		auto& headers = *m_headers.begin();
-		auto& bodies = *m_bodies.begin();
-		if (headers.first <= m_lastImportedBlock)
-		{
-			size_t i = m_lastImportedBlock - headers.first + 1;
-			while (i > 0)
-			{
-				size_t const toErase = min(i, min(headers.second.size(), bodies.second.size()));
-				auto newHeaders = std::move(headers.second);
-				newHeaders.erase(newHeaders.begin(), newHeaders.begin() + toErase);
-				unsigned newHeaderHead = headers.first + toErase;
-				auto newBodies = std::move(bodies.second);
-				newBodies.erase(newBodies.begin(), newBodies.begin() + toErase);
-				unsigned newBodiesHead = bodies.first + toErase;
-				m_headers.erase(m_headers.begin());
-				m_bodies.erase(m_bodies.begin());
-				if (!newHeaders.empty())
-					m_headers[newHeaderHead] = newHeaders;
-				if (!newBodies.empty())
-					m_bodies[newBodiesHead] = newBodies;
-				i -= toErase;
-			}
-		}
+		removeStaleHeaders();
 	}
 }
 
@@ -288,8 +287,10 @@ void BlockChainSync::syncPeer(std::shared_ptr<EthereumPeer> _peer, bool _force)
 
 void BlockChainSync::continueSync()
 {
+	DEV_INVARIANT_CHECK;
 	host().foreachPeer([this](std::shared_ptr<EthereumPeer> _p)
 	{
+		DEV_INVARIANT_CHECK;
 		syncPeer(_p, false);
 		return true;
 	});
@@ -451,11 +452,13 @@ void BlockChainSync::onPeerBlockHeaders(std::shared_ptr<EthereumPeer> _peer, RLP
 	if (m_state != SyncState::Blocks && m_state != SyncState::Waiting)
 	{
 		clog(NetMessageSummary) << "Ignoring unexpected blocks";
+		DEV_INVARIANT_CHECK_HERE;
 		return;
 	}
 	if (m_state == SyncState::Waiting)
 	{
 		clog(NetAllDetail) << "Ignored blocks while waiting";
+		DEV_INVARIANT_CHECK_HERE;
 		return;
 	}
 	if (itemCount == 0)
@@ -507,6 +510,7 @@ void BlockChainSync::onPeerBlockHeaders(std::shared_ptr<EthereumPeer> _peer, RLP
 					clog(NetImpolite) << "Unknown block header " << blockNumber << " " << info.hash() << " (Restart syncing)";
 					_peer->addRating(-1);
 					restartSync();
+					DEV_INVARIANT_CHECK_HERE;
 					return ;
 				}
 
@@ -545,6 +549,7 @@ void BlockChainSync::onPeerBlockHeaders(std::shared_ptr<EthereumPeer> _peer, RLP
 				m_headerIdToNumber[headerId] = blockNumber;
 		}
 	}
+	removeStaleHeaders();
 	collectBlocks();
 	continueSync();
 }
@@ -558,11 +563,13 @@ void BlockChainSync::onPeerBlockBodies(std::shared_ptr<EthereumPeer> _peer, RLP 
 	clearPeerDownload(_peer);
 	if (m_state != SyncState::Blocks && m_state != SyncState::Waiting) {
 		clog(NetMessageSummary) << "Ignoring unexpected blocks";
+		DEV_INVARIANT_CHECK_HERE;
 		return;
 	}
 	if (m_state == SyncState::Waiting)
 	{
 		clog(NetAllDetail) << "Ignored blocks while waiting";
+		DEV_INVARIANT_CHECK_HERE;
 		return;
 	}
 	if (itemCount == 0)
@@ -600,13 +607,19 @@ void BlockChainSync::onPeerBlockBodies(std::shared_ptr<EthereumPeer> _peer, RLP 
 void BlockChainSync::collectBlocks()
 {
 	if (!m_haveCommonHeader || m_headers.empty() || m_bodies.empty())
+	{
+		DEV_INVARIANT_CHECK_HERE;
 		return;
+	}
 
 	// merge headers and bodies
 	auto& headers = *m_headers.begin();
 	auto& bodies = *m_bodies.begin();
 	if (headers.first != bodies.first || headers.first != m_lastImportedBlock + 1)
+	{
+		DEV_INVARIANT_CHECK_HERE;
 		return;
+	}
 
 	unsigned success = 0;
 	unsigned future = 0;
@@ -635,6 +648,7 @@ void BlockChainSync::collectBlocks()
 		case ImportResult::Malformed:
 		case ImportResult::BadChain:
 			restartSync();
+			DEV_INVARIANT_CHECK_HERE;
 			return;
 
 		case ImportResult::FutureTimeKnown:
@@ -649,6 +663,7 @@ void BlockChainSync::collectBlocks()
 			{
 				resetSync();
 				m_haveCommonHeader = false; // fork detected, search for common header again
+				DEV_INVARIANT_CHECK_HERE;
 				return;
 			}
 			break;
@@ -662,21 +677,11 @@ void BlockChainSync::collectBlocks()
 	{
 		clog(NetWarn) << "Too many unknown blocks, restarting sync";
 		restartSync();
+		DEV_INVARIANT_CHECK_HERE;
 		return;
 	}
 
-	auto newHeaders = std::move(headers.second);
-	newHeaders.erase(newHeaders.begin(), newHeaders.begin() + i);
-	unsigned newHeaderHead = headers.first + i;
-	auto newBodies = std::move(bodies.second);
-	newBodies.erase(newBodies.begin(), newBodies.begin() + i);
-	unsigned newBodiesHead = bodies.first + i;
-	m_headers.erase(m_headers.begin());
-	m_bodies.erase(m_bodies.begin());
-	if (!newHeaders.empty())
-		m_headers[newHeaderHead] = newHeaders;
-	if (!newBodies.empty())
-		m_bodies[newBodiesHead] = newBodies;
+	removeStaleHeaders();
 
 	if (m_headers.empty())
 	{

@@ -161,6 +161,7 @@ private:
 	static char const* const s_stateNames[static_cast<int>(SyncState::Size)];
 	bool invariants() const override;
 	void logNewBlock(h256 const& _h);
+	void removeStaleHeaders();	///< Remove m_headers and m_bodies elements that are equal or smaller than m_lastImportedBlock
 };
 
 std::ostream& operator<<(std::ostream& _out, SyncStatus const& _sync);
