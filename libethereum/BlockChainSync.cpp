@@ -649,9 +649,9 @@ void BlockChainSync::collectBlocks()
 			{
 				resetSync();
 				m_haveCommonHeader = false; // fork detected, search for common header again
+				return;
 			}
-			return;
-
+			break;
 		default:;
 		}
 	}
