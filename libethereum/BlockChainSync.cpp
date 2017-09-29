@@ -183,6 +183,7 @@ void BlockChainSync::onBlockImported(BlockHeader const& _info)
 	//if a block has been added via mining or other block import function
 	//through RPC, then we should count it as a last imported block
 	RecursiveGuard l(x_sync);
+	DEV_INVARIANT_CHECK;
 	if (_info.number() > m_lastImportedBlock)
 	{
 		m_lastImportedBlock = static_cast<unsigned>(_info.number());
@@ -194,9 +195,11 @@ void BlockChainSync::onBlockImported(BlockHeader const& _info)
 void BlockChainSync::abortSync()
 {
 	RecursiveGuard l(x_sync);
+	DEV_INVARIANT_CHECK;
 	resetSync();
 	host().foreachPeer([&](std::shared_ptr<EthereumPeer> _p)
 	{
+		DEV_INVARIANT_CHECK;
 		_p->abortSync();
 		return true;
 	});
@@ -756,6 +759,7 @@ SyncStatus BlockChainSync::status() const
 
 void BlockChainSync::resetSync()
 {
+	DEV_INVARIANT_CHECK;
 	m_downloadingHeaders.clear();
 	m_downloadingBodies.clear();
 	m_headers.clear();
@@ -770,6 +774,7 @@ void BlockChainSync::resetSync()
 void BlockChainSync::restartSync()
 {
 	RecursiveGuard l(x_sync);
+	DEV_INVARIANT_CHECK;
 	resetSync();
 	m_highestBlock = 0;
 	m_haveCommonHeader = false;
@@ -782,6 +787,7 @@ void BlockChainSync::restartSync()
 void BlockChainSync::completeSync()
 {
 	RecursiveGuard l(x_sync);
+	DEV_INVARIANT_CHECK;
 	resetSync();
 	m_state = SyncState::Idle;
 }
@@ -846,10 +852,9 @@ void BlockChainSync::onPeerNewHashes(std::shared_ptr<EthereumPeer> _peer, std::v
 void BlockChainSync::onPeerAborting()
 {
 	RecursiveGuard l(x_sync);
-	// Can't check invariants here since the peers is already removed from the list and the state is not updated yet.
+	DEV_INVARIANT_CHECK;
 	clearPeerDownload();
 	continueSync();
-	DEV_INVARIANT_CHECK_HERE;
 }
 
 bool BlockChainSync::invariants() const
