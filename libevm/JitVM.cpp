@@ -77,12 +77,26 @@ public:
 	{
 		auto mode = JitVM::toRevision(_ext.evmSchedule());
 		uint32_t flags = _ext.staticCall ? EVM_STATIC : 0;
-		evm_message msg = {toEvmC(_ext.myAddress), toEvmC(_ext.caller),
-						   toEvmC(_ext.value), _ext.data.data(),
-						   _ext.data.size(), toEvmC(_ext.codeHash), gas,
-						   static_cast<int32_t>(_ext.depth), EVM_CALL, flags};
+		evm_message msg = {
+			toEvmC(_ext.myAddress),
+			toEvmC(_ext.caller),
+			toEvmC(_ext.value),
+			_ext.data.data(),
+			_ext.data.size(),
+			toEvmC(_ext.codeHash),
+			gas,
+			static_cast<int32_t>(_ext.depth),
+			EVM_CALL,
+			flags
+		};
 		return Result{m_instance->execute(
-			m_instance, &_ext, mode, &msg, _ext.code.data(), _ext.code.size()
+			m_instance,
+			&_ext,
+			mode,
+			&msg,
+			_ext.code.data(),
+			_ext.code.size(),
+			nullptr
 		)};
 	}
 
