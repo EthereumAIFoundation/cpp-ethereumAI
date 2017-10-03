@@ -671,6 +671,14 @@ void VM::interpretCases()
 			}
 		}
 		NEXT
+#else
+		CASE(SHL)
+		CASE(SHR)
+		CASE(SAR)
+		{
+			throwBadInstruction();
+		}
+		NEXT
 #endif
 
 		CASE(ADDMOD)
