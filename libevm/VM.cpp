@@ -621,7 +621,8 @@ void VM::interpretCases()
 		}
 		NEXT
 
-#ifdef EVM_USE_BITSHIFT
+#if EIP_145
+
 		CASE(SHL)
 		{
 			ON_OP();
@@ -630,7 +631,7 @@ void VM::interpretCases()
 			if (m_SP[0] >= 256)
 				m_SPP[0] = 0;
 			else
-				m_SPP[0] = m_SP[1] << uint64_t(m_SP[0]);
+				m_SPP[0] = m_SP[1] << unsigned(m_SP[0]);
 		}
 		NEXT
 
@@ -642,7 +643,7 @@ void VM::interpretCases()
 			if (m_SP[0] >= 256)
 				m_SPP[0] = 0;
 			else
-				m_SPP[0] = m_SP[1] >> uint64_t(m_SP[0]);
+				m_SPP[0] = m_SP[1] >> unsigned(m_SP[0]);
 		}
 		NEXT
 
@@ -667,7 +668,8 @@ void VM::interpretCases()
 			{
 				uint64_t amount = uint64_t(m_SP[0]);
 				m_SPP[0] = shiftee >> amount;
-				m_SPP[0] |= allbits << (256 - amount);
+				if (shiftee & hibit)
+					m_SPP[0] |= allbits << (256 - amount);
 			}
 		}
 		NEXT
@@ -678,7 +680,6 @@ void VM::interpretCases()
 		{
 			throwBadInstruction();
 		}
-		NEXT
 #endif
 
 		CASE(ADDMOD)
