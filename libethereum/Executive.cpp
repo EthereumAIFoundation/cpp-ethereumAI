@@ -258,6 +258,8 @@ bool Executive::call(CallParameters const& _p, u256 const& _gasPrice, Address co
 	}
 
 	m_savepoint = m_s.savepoint();
+	// Transfer ether.  This touches address 3 in block 2675119, which is essential.
+	m_s.transferBalance(_p.senderAddress, _p.receiveAddress, _p.valueTransfer);
 
 	if (m_sealEngine.isPrecompiled(_p.codeAddress, m_envInfo.number()))
 	{
@@ -295,9 +297,6 @@ bool Executive::call(CallParameters const& _p, u256 const& _gasPrice, Address co
 			m_ext = make_shared<ExtVM>(m_s, m_envInfo, m_sealEngine, _p.receiveAddress, _p.senderAddress, _origin, _p.apparentValue, _gasPrice, _p.data, &c, codeHash, m_depth, _p.staticCall);
 		}
 	}
-
-	// Transfer ether.
-	m_s.transferBalance(_p.senderAddress, _p.receiveAddress, _p.valueTransfer);
 	return !m_ext;
 }
 
