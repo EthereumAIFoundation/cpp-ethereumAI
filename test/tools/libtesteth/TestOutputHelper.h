@@ -41,6 +41,16 @@ public:
 	static std::string const& testName() { return m_currentTestName; }
 	static std::string const& caseName() { return m_currentTestCaseName; }
 	static std::string const& testFileName() { return m_currentTestFileName; }
+	static void defineALL()
+	{
+		m_timer = Timer();
+		m_currTest = 0;
+		m_maxTests = 1;
+		m_currentTestName = "n/a";
+		m_currentTestCaseName = "n/a";
+		m_currentTestFileName = "n/a";
+		m_execTimeResults = std::vector<TestOutputHelper::execTimeName>();
+	}
 	static void printTestExecStats();
 	~TestOutputHelper() { TestOutputHelper::finishTest(); }
 private:
