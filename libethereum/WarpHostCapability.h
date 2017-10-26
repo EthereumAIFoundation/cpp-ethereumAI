@@ -46,6 +46,7 @@ private:
 	u256 const m_networkId;
 
 	std::shared_ptr<WarpPeerObserverFace> m_peerObserver;
+	time_t m_lastTick;
 };
 
 }
