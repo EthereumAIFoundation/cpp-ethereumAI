@@ -61,6 +61,7 @@ void version()
 	exit(0);
 }
 
+
 /*
 The equivalent of setlocale(LC_ALL, “C”) is called before any user code is run.
 If the user has an invalid environment setting then it is possible for the call
