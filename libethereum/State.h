@@ -351,6 +351,7 @@ private:
 	AddressHash m_touched;						///< Tracks all addresses touched so far.
 
 	u256 m_accountStartNonce;
+	
 
 	friend std::ostream& operator<<(std::ostream& _out, State const& _s);
 	ChangeLog m_changeLog;
